@@ -49,7 +49,7 @@ def draw_blocks(page, text_blocks, table_blocks):
 
     # Show the image with blocks
     plt.show()
-def optimize(text_blocks,table_blocks):
+def optimize(text_blocks,table_blocks,noEdge):
     tempText_blocks =[]
     for text in text_blocks:
         isOk = True
@@ -63,12 +63,13 @@ def optimize(text_blocks,table_blocks):
                 count = count+1
             if text[3]>table[1] and text[3]<table[3]:
                 count = count+1
-            if count>3:
+            if count>noEdge:
                 isOk=False
                 break
         if isOk == True:
             tempText_blocks.append(text)
     return tempText_blocks
+
 
 def main(pdf_file):
     # Open the PDF file
@@ -78,18 +79,18 @@ def main(pdf_file):
 
         # Iterate through each page
         for page_number in range(len(pdf_reader.pages)):
-            if i ==3:
+            if i ==7:
                 break
             i=i+1
             # Open the PDF page using fitz
             pdf_document = fitz.open(pdf_file)
             page = pdf_document[page_number]
+            table_blocks = []
 
             # Identify text and table blocks
             text_blocks = identify_blocks(page)
             df = read_pdf(pdf_file, pages=i,multiple_tables=True,output_format='json')
             print("number of table in this page is ", len(df))
-            table_blocks=[]
             for tableFrame in df:
                 # print(tableFrame)
                 top = tableFrame['top']
@@ -98,9 +99,10 @@ def main(pdf_file):
                 bottom = tableFrame['bottom']
                 table_blocks.append((left,top,right,bottom))
             # Print the blocks
-            print('text_blocks:', text_blocks)
-            print('table_blocks:', table_blocks)
-            text_blocks= optimize(text_blocks,table_blocks)
+            # print('text_blocks:', text_blocks)
+            # print('table_blocks:', table_blocks)
+            table_blocks = optimize(table_blocks,table_blocks,2)
+            text_blocks= optimize(text_blocks,table_blocks,3)
             # # Draw the blocks
             draw_blocks(page, text_blocks, table_blocks)
             # print('table_blocks:',table_blocks)
