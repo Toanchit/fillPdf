@@ -79,8 +79,8 @@ def main(pdf_file):
 
         # Iterate through each page
         for page_number in range(len(pdf_reader.pages)):
-            if i ==7:
-                break
+            # if i ==7:
+            #     break
             i=i+1
             # Open the PDF page using fitz
             pdf_document = fitz.open(pdf_file)
@@ -101,14 +101,14 @@ def main(pdf_file):
             # Print the blocks
             # print('text_blocks:', text_blocks)
             # print('table_blocks:', table_blocks)
-            table_blocks = optimize(table_blocks,table_blocks,2)
-            text_blocks= optimize(text_blocks,table_blocks,3)
+            table_blocks = optimize(table_blocks,table_blocks,1)
+            text_blocks= optimize(text_blocks,table_blocks,2)
             # # Draw the blocks
             draw_blocks(page, text_blocks, table_blocks)
             # print('table_blocks:',table_blocks)
 
 if __name__ == "__main__":
-    pdf_file = "profit-and-loss-statement.pdf"  # Replace with your PDF file path
+    pdf_file = "crowe.pdf"  # Replace with your PDF file path
     main(pdf_file)
     # df = read_pdf(pdf_file,multiple_tables=True)
     # print("number of table in this page is ",len(df))
