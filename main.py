@@ -1,6 +1,6 @@
 import PyPDF2
 import fitz  # PyMuPDF
-import tabula,json
+import tabula
 from matplotlib.patches import Rectangle
 import matplotlib.pyplot as plt
 import numpy as np
@@ -49,7 +49,7 @@ def draw_blocks(page, text_blocks, table_blocks):
 
     # Show the image with blocks
     plt.show()
-def optimize(text_blocks,table_blocks,noEdge):
+def optimizeTable(text_blocks,table_blocks,noEdge):
     tempText_blocks =[]
     for text in text_blocks:
         isOk = True
@@ -57,7 +57,7 @@ def optimize(text_blocks,table_blocks,noEdge):
             count =0
             if text[0]>table[0] and text[0]<table[2]:
                 count = count+1
-            if text[2] > table[0] and text[2] < table[2]:
+            if text[2] > table[0] and text[2]< table[2]:
                 count = count + 1
             if text[1]>table[1] and text[1]<table[3]:
                 count = count+1
@@ -69,19 +69,44 @@ def optimize(text_blocks,table_blocks,noEdge):
         if isOk == True:
             tempText_blocks.append(text)
     return tempText_blocks
+def optimize(text_blocks,table_blocks):
+    tempText_blocks =[]
+    for text in text_blocks:
+        isOk = True
+        left = text[0]
+        top = text[1]
+        right = text[2]
+        bottom = text[3]
+        for table in table_blocks:
+            count =0
+            if text[0]>(table[0]-2) and text[0]<(table[2]+2): #the number 2 means the text area really is inside the tabel area
+                count = count+1
+                if text[2] < table[2]:
+                    count = count +1
+                elif (text[1]>table[1] and text[1] < table[3]) or (text[3]>table[1] and text[3]<table[3]) or (table[1] > text[1] and table[1] < text[3]) or (table[3] > text[1] and table[3] < text[3]):
+                    left = table[2]+2
+
+            if text[2] >(table[0]-2) and text[2] < (table[2]+2):
+                count = count + 1
+                if text[0] > table[0]:
+                    count = count +1
+                elif (text[1] > table[1]+2 and text[1] < table[3]-2) or (text[3] > table[1]+2 and text[3] < table[3]-2) or (table[1] > text[1]+2 and table[1] < text[3]-2) or (table[3] > text[1]+2 and table[3] < text[3]-2):
+                    right = table[0]-2
+
+        if isOk == True:
+            tempText_blocks.append((left,top,right,bottom))
+    return tempText_blocks
 
 
 def main(pdf_file):
     # Open the PDF file
-    i=0
     with open(pdf_file, "rb") as file:
         pdf_reader = PyPDF2.PdfReader(file)
-
+        i =0
         # Iterate through each page
         for page_number in range(len(pdf_reader.pages)):
-            # if i ==7:
-            #     break
-            i=i+1
+            # if page_number != 8 :
+            #     continue
             # Open the PDF page using fitz
             pdf_document = fitz.open(pdf_file)
             page = pdf_document[page_number]
@@ -89,7 +114,7 @@ def main(pdf_file):
 
             # Identify text and table blocks
             text_blocks = identify_blocks(page)
-            df = read_pdf(pdf_file, pages=i,multiple_tables=True,output_format='json')
+            df = read_pdf(pdf_file, pages=page_number+1,multiple_tables=True,output_format='json') #need add 1 in the field pages because the pages start from 1
             print("number of table in this page is ", len(df))
             for tableFrame in df:
                 # print(tableFrame)
@@ -101,14 +126,20 @@ def main(pdf_file):
             # Print the blocks
             # print('text_blocks:', text_blocks)
             # print('table_blocks:', table_blocks)
-            table_blocks = optimize(table_blocks,table_blocks,1)
-            text_blocks= optimize(text_blocks,table_blocks,2)
+            table_blocks = optimizeTable(table_blocks,table_blocks,1) #to remove all of area totally inside another area
+            text_blocks = optimizeTable(text_blocks, text_blocks, 3) #to remove all of area totally inside another area
+            text_blocks= optimizeTable(text_blocks,table_blocks,3)  #to remove all of area totally inside another area
+            table_blocks = optimize(table_blocks,text_blocks) #to minimize the table area that is overlapped by a part of the text area
+            # Print the blocks
+            # print('table_blocks:', table_blocks)
+            # print('text_blocks:', text_blocks)
             # # Draw the blocks
             draw_blocks(page, text_blocks, table_blocks)
+            i =i+1
             # print('table_blocks:',table_blocks)
 
 if __name__ == "__main__":
-    pdf_file = "crowe.pdf"  # Replace with your PDF file path
+    pdf_file = "profit-and-loss-statement.pdf"  # Replace with your PDF file path profit-and-loss-statement.pdf crowe.pdf
     main(pdf_file)
     # df = read_pdf(pdf_file,multiple_tables=True)
     # print("number of table in this page is ",len(df))
